@@ -5,12 +5,48 @@ const ctx = canvas.getContext('2d')
 
 const background = new Image()
 background.src = 'stars-game-background.png'
-let starsY = 5500
+let starsY = 5400
 const starsDy = -1.75
 
 class Game {
   constructor () {
-    
+    this.width = canvas.width
+    this.height = canvas.height
+    this.entities = []
+    this.entities = this.entities.concat(createEnemy(this))
+    this.entities = this.entities.concat(new Player(this))
+    const tick = () => {
+      this.update()
+      this.draw(ctx, this.width, this.height)
+      window.requestAnimationFrame(tick)
+    }
+    tick()
+  }
+
+  update () {
+    for (let i = 0; i < this.entities.length; i++) {
+      this.entities[i].update()
+    }
+  }
+
+  draw (ctx, width, height) {
+    ctx.clearRect(0, 0, width, height)
+    if (starsY <= 0) {
+      ctx.drawImage(background, 0, starsY + background.height, background.width, canvas.height, 0, 0, canvas.width, canvas.height)
+    }
+    if (starsY <= -5500) {
+      starsY = 5500 + starsDy
+    }
+    ctx.drawImage(background, 0, starsY, background.width, canvas.height, 0, 0, canvas.width, canvas.height)
+    starsY += starsDy
+    for (let i = 0; i < this.entities.length; i++) {
+      ctx.fillStyle = this.entities[i].color
+      ctx.fillRect(this.entities[i].x, this.entities[i].y, this.entities[i].width, this.entities[i].height)
+    }
+  }
+
+  addEntity (entity) {
+    this.entities.push(entity)
   }
 }
 
@@ -30,42 +66,40 @@ class Game {
 // }
 
 class Enemy {
-  constructor () {
-    this.x = 250
+  constructor (x, game) {
+    this.x = x
     this.y = 0
     this.dx = 0
-    this.dy = 0
+    this.dy = 1
     this.color = 'red'
     this.width = 10
     this.height = 10
   }
 
-  spawn (type) {
-    if (type === 1) {
-      for (let i = 1; i < 11; i++) {
-        this.dy = 1
-        enemy.x = 50 * i
-        ctx.fillStyle = this.color
-        ctx.fillRect(this.x, this.y, this.width, this.height)
-      }
-    }
+  update () {
+    this.y += this.dy
+    this.x += this.dx
   }
 }
 
+function createEnemy () {
+  const enemy = []
+  for (let i = 1; i < 11; i++) {
+    const x = 50 * i
+    enemy.push(new Enemy(x))
+  }
+  return enemy
+}
+
 class Bullet {
-  constructor () {
+  constructor (x, y) {
     this.keyboarder = Keyboarder
-    this.x = 0
-    this.y = 0
+    this.x = x
+    this.y = y
     this.dy = 2
     this.width = 3
     this.height = 8
     this.color = '#61FF7E'
-  }
-
-  draw () {
-    ctx.fillStyle = this.color
-    ctx.fillRect(this.x, this.y, this.width, this.height)
   }
 
   update () {
@@ -74,7 +108,8 @@ class Bullet {
 }
 
 class Player {
-  constructor () {
+  constructor (game) {
+    this.game = game
     this.keyboarder = Keyboarder
     this.x = 249
     this.y = (canvas.height - canvas.height / 5)
@@ -86,66 +121,34 @@ class Player {
   }
 
   update () {
-    player.dx = 0
-    player.dy = 0
+    this.dx = 0
+    this.dy = 0
     if (this.keyboarder.isDown(this.keyboarder.KEYS.LEFT) || this.keyboarder.isDown(this.keyboarder.KEYS.A)) {
-      player.dx = -2
+      this.dx = -2
     } if (this.keyboarder.isDown(this.keyboarder.KEYS.RIGHT) || this.keyboarder.isDown(this.keyboarder.KEYS.D)) {
-      player.dx = 2
+      this.dx = 2
     } if (this.keyboarder.isDown(this.keyboarder.KEYS.UP) || this.keyboarder.isDown(this.keyboarder.KEYS.W)) {
-      player.dy = -1.75
+      this.dy = -1.75
     } if (this.keyboarder.isDown(this.keyboarder.KEYS.DOWN) || this.keyboarder.isDown(this.keyboarder.KEYS.S)) {
-      player.dy = 1.75
+      this.dy = 1.75
     }
+    if (this.x + this.dx >= (canvas.width - this.width)) {
+      this.x = 0
+    } else if (this.x + this.dx <= 0) {
+      this.x = canvas.width - this.width
+    } else if (this.y + this.dy <= 300) {
+      this.y = 300
+    } else if (this.y + this.height >= 599) {
+      this.y = canvas.height - this.height
+    }
+    this.x += this.dx
+    this.y += this.dy
     if (this.keyboarder.isDown(this.keyboarder.KEYS.SPACE)) {
-      let bullet = new Bullet()
-      bullet.x = this.x
-      bullet.y = this.y
-      bullet.draw()
-      bullet.y += bullet.dy
-      bullet.update()
+      const bullet = new Bullet(this.x, this.y)
+      this.game.addBody(bullet)
     }
   }
-
-  draw () {
-    ctx.fillStyle = this.color
-    ctx.fillRect(this.x, this.y, this.width, this.height)
-  }
 }
-
-const player = new Player()
-const enemy = new Enemy()
-function renderDisplay () {
-  ctx.fillStyle = 'rgb(0,0,0)'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-}
-
-// function draw () {
-//   ctx.clearRect(0, 0, canvas.width, canvas.height)
-//   renderDisplay()
-//   if (starsY <= 0) {
-//     ctx.drawImage(background, 0, starsY + background.height, background.width, canvas.height, 0, 0, canvas.width, canvas.height)
-//   }
-//   if (starsY <= -5500) {
-//     starsY = 5500 + starsDy
-//   }
-//   ctx.drawImage(background, 0, starsY, background.width, canvas.height, 0, 0, canvas.width, canvas.height)
-//   player.draw()
-//   player.update()
-//   player.x += player.dx
-//   player.y += player.dy
-//   if (player.x + player.dx >= (canvas.width - player.width)) {
-//     player.x = 0
-//   } else if (player.x + player.dx <= 0) {
-//     player.x = canvas.width - player.width
-//   } else if (player.y + player.dy <= 300) {
-//     player.y = 300
-//   } else if (player.y + player.height >= 599) {
-//     player.y = canvas.height - player.height
-//   }
-//   enemy.spawn(1)
-//   enemy.y += enemy.dy
-//   starsY += starsDy
-//   window.requestAnimationFrame(draw)
-// }
-draw()
+window.addEventListener('load', function () {
+  new Game()
+})
