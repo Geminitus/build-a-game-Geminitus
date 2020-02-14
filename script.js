@@ -7,26 +7,39 @@ const background = new Image()
 background.src = 'stars-game-background.png'
 let starsY = 5400
 const starsDy = -1.75
+const playerModel = new Image()
+playerModel.src = 'pngkey.com-spaceship-png-4392668.png'
 
 class Game {
   constructor () {
     this.width = canvas.width
     this.height = canvas.height
     this.entities = []
-    this.entities = this.entities.concat(createEnemy(this))
     this.entities = this.entities.concat(new Player(this))
+    this.ticks = 0
+    this.score = 0
     const tick = () => {
+      if (this.ticks % 45 === 0) {
+        this.entities = this.entities.concat(new Enemy(50 + (Math.floor(Math.random() * 45)) * 10, 0, this))
+      }
       this.update()
       this.draw(ctx, this.width, this.height)
       window.requestAnimationFrame(tick)
+      this.ticks += 1
     }
     tick()
   }
 
+  notColliding = (ent1) => {
+    return this.entities.filter(function (ent2) { return colliding(ent1, ent2) }).length === 0
+  }
+
   update () {
+    this.entities = this.entities.filter(this.notColliding)
     for (let i = 0; i < this.entities.length; i++) {
       this.entities[i].update()
     }
+    this.keepScore()
   }
 
   draw (ctx, width, height) {
@@ -40,8 +53,24 @@ class Game {
     ctx.drawImage(background, 0, starsY, background.width, canvas.height, 0, 0, canvas.width, canvas.height)
     starsY += starsDy
     for (let i = 0; i < this.entities.length; i++) {
+      if(this.entities[i].sprite === 0){
       ctx.fillStyle = this.entities[i].color
       ctx.fillRect(this.entities[i].x, this.entities[i].y, this.entities[i].width, this.entities[i].height)
+      }
+      else if(this.entities[i].sprite === 1) {
+        ctx.drawImage(playerModel, 0, 0, playerModel.width, playerModel.height, this.entities[i].x, this.entities[i].y, this.entities[i].width, this.entities[i].height)
+      }
+    }
+    ctx.fillStyle = 'aqua'
+    ctx.font = '28px sans serif'
+    ctx.fillText(`Score: ${this.score}`, 10, 30)
+  }
+
+  keepScore () {
+    for (let entity of this.entities) {
+      if (entity instanceof Bullet && !this.notColliding(entity)) {
+        this.score += 10
+      }
     }
   }
 
@@ -55,48 +84,46 @@ class Game {
 //   ctx.fillRect(0, 0, canvas.width, canvas.height)
 // }
 
-// function stars() {
-//   for (let i = 0; i < 6; i++) {
-//     const rng1 = Math.floor(Math.random() * canvas.width)
-//     const rng2 = Math.floor(Math.random() * 4)
-//     const rng3 = Math.floor(Math.random() * canvas.height)
-//     ctx.fillStyle = 'rgb(255, 255, 255)'
-//     ctx.fillRect(rng1, rng3, rng2, rng2)
-//   }
-// }
-
 class Enemy {
-  constructor (x, game) {
+  constructor (x, y, game) {
+    this.sprite = 0
+    this.game = game
     this.x = x
-    this.y = 0
+    this.y = y
     this.dx = 0
     this.dy = 1
     this.color = 'red'
-    this.width = 10
-    this.height = 10
+    this.width = 20
+    this.height = 20
   }
 
   update () {
     this.y += this.dy
     this.x += this.dx
+    // if (Math.random() > 0.997) {
+    //   const enemyBullet = (new Bullet(this.x + this.width / 2 - 1, this.y + 20, 3))
+    //   this.game.addEntity(enemyBullet)
+    // }
   }
 }
 
-function createEnemy () {
-  const enemy = []
-  for (let i = 1; i < 11; i++) {
-    const x = 50 * i
-    enemy.push(new Enemy(x))
+function createEnemy (game) {
+  const enemys = []
+  for (let i = 0; i < 20; i++) {
+    const x = 48 * i + 21
+    const y = 50 * -i
+    enemys.push(new Enemy(x, y, game))
   }
-  return enemy
+  return enemys
 }
 
 class Bullet {
-  constructor (x, y) {
+  constructor (x, y, dy) {
+    this.sprite = 0
     this.keyboarder = Keyboarder
     this.x = x
     this.y = y
-    this.dy = 2
+    this.dy = dy
     this.width = 3
     this.height = 8
     this.color = '#61FF7E'
@@ -109,15 +136,20 @@ class Bullet {
 
 class Player {
   constructor (game) {
+    this.sprite = 1
     this.game = game
     this.keyboarder = Keyboarder
     this.x = 249
     this.y = (canvas.height - canvas.height / 5)
     this.dx = 0
     this.dy = 0
+    this.model = playerModel
+    this.modelWidth = playerModel.width
+    this.modelHeight = playerModel.height
     this.color = 'aqua'
-    this.width = 10
-    this.height = 10
+    this.width = 30
+    this.height = 40
+    this.ticksSinceFired = 0
   }
 
   update () {
@@ -144,11 +176,24 @@ class Player {
     this.x += this.dx
     this.y += this.dy
     if (this.keyboarder.isDown(this.keyboarder.KEYS.SPACE)) {
-      const bullet = new Bullet(this.x, this.y)
-      this.game.addBody(bullet)
+      if (this.game.ticks % 15 === 0) {
+        const bullet = new Bullet(this.x + this.width / 2 - 1, this.y - 50, -3)
+        this.game.addEntity(bullet)
+      }
     }
   }
 }
+
+function colliding (ent1, ent2) {
+  return !(
+    ent1 === ent2 ||
+        ent1.x + ent1.width < ent2.x - ent2.width ||
+        ent1.y + ent1.height < ent2.y - ent2.height ||
+        ent1.x - ent1.width > ent2.x + ent2.width ||
+        ent1.y - ent1.height > ent2.y + ent2.height
+  )
+}
+
 window.addEventListener('load', function () {
   new Game()
 })
