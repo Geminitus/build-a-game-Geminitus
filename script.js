@@ -48,7 +48,7 @@ class Game {
       ctx.drawImage(background, 0, starsY + background.height, background.width, canvas.height, 0, 0, canvas.width, canvas.height)
     }
     if (starsY <= -5500) {
-      starsY = 5500 + starsDy
+      starsY = 5500
     }
     ctx.drawImage(background, 0, starsY, background.width, canvas.height, 0, 0, canvas.width, canvas.height)
     starsY += starsDy
@@ -177,7 +177,7 @@ class Player {
     this.y += this.dy
     if (this.keyboarder.isDown(this.keyboarder.KEYS.SPACE)) {
       if (this.game.ticks % 15 === 0) {
-        const bullet = new Bullet(this.x + this.width / 2 - 1, this.y - 50, -3)
+        const bullet = new Bullet(this.x + this.width / 2 - 1, this.y - 46, -3)
         this.game.addEntity(bullet)
       }
     }
