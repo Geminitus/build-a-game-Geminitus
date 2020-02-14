@@ -69,7 +69,7 @@ class Game {
   keepScore () {
     for (let entity of this.entities) {
       if (entity instanceof Bullet && !this.notColliding(entity)) {
-        this.score += 10
+        this.score += 10000000
       }
     }
   }
